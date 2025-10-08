@@ -1,0 +1,98 @@
+#include "CytronMotorDriver.h"
+
+// === Line Sensors ===
+#define LFS_L A7   // Left sensor analog pin
+#define LFS_M A5   // Middle sensor analog pin
+#define LFS_R A6   // Right sensor analog pin
+
+// === Motor Configuration for Arduino Due ===
+CytronMD motor1(PWM_DIR, 22, 40);   // Motor 1 -> DIR: 22, PWM: 40
+CytronMD motor2(PWM_DIR, 24, 42);   // Motor 2 -> DIR: 24, PWM: 42
+CytronMD motor3(PWM_DIR, 26, 44);   // Motor 3 -> DIR: 26, PWM: 44
+CytronMD motor4(PWM_DIR, 28, 46);   // Motor 4 -> DIR: 28, PWM: 46
+
+// === Parameters ===
+int threshold = 1004;   // adjust this after reading raw sensor values
+int speedVal  = 140;    // forward speed (0–255)
+
+// === Moving Average Settings ===
+#define WINDOW_SIZE 4   // try 8–16; larger = smoother but slower response
+
+uint16_t bufL[WINDOW_SIZE] = {0};
+uint16_t bufM[WINDOW_SIZE] = {0};
+uint16_t bufR[WINDOW_SIZE] = {0};
+
+uint32_t sumL = 0, sumM = 0, sumR = 0;
+uint8_t  wIdx = 0;
+bool     filled = false;
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Starting: Moving forward until line detected (moving average)...");
+}
+
+// Helper to update rolling average buffers
+inline uint16_t updateAvg(uint16_t *buf, uint32_t &sum, uint16_t newVal) {
+  uint16_t old = buf[wIdx];   // value that will be overwritten at this index
+  sum -= old;                 // remove old from sum
+  buf[wIdx] = newVal;         // store new
+  sum += newVal;              // add new to sum
+
+  // current window length
+  uint8_t n = filled ? WINDOW_SIZE : (wIdx + 1);
+  return (uint16_t)(sum / n);
+}
+
+void loop() {
+  // 1) Read raw analogs (0–1023 on Due by default)
+  uint16_t rawL = analogRead(LFS_L);
+  uint16_t rawM = analogRead(LFS_M);
+  uint16_t rawR = analogRead(LFS_R);
+
+  // 2) Update rolling averages
+  uint16_t avgL = updateAvg(bufL, sumL, rawL);
+  uint16_t avgM = updateAvg(bufM, sumM, rawM);
+  uint16_t avgR = updateAvg(bufR, sumR, rawR);
+
+  // 3) Advance circular index
+  wIdx++;
+  if (wIdx >= WINDOW_SIZE) {
+    wIdx = 0;
+    filled = true;
+  }
+
+  // 4) Print raw and averaged values
+  Serial.print("RAW  LMR: "); Serial.print(rawL); Serial.print(" ");
+  Serial.print(rawM); Serial.print(" "); Serial.println(rawR);
+
+  Serial.print("AVG  LMR: "); Serial.print(avgL); Serial.print(" ");
+  Serial.print(avgM); Serial.print(" "); Serial.println(avgR);
+
+  // 5) Detect line using the averaged values (black = high)
+  bool lineDetected = (avgL > threshold) || (avgM > threshold) || (avgR > threshold);
+
+  if (lineDetected) {
+    stopCar();
+    Serial.println("Line detected (avg) ! Motors stopped.");
+    while (true);  // Stop completely (stay stopped) — kept as in your code
+  } else {
+    moveForward(speedVal);
+  }
+
+  delay(50);  // smaller delay helps the moving average respond smoothly
+}
+
+// === Motor Control Functions ===
+void moveForward(int speedVal) {
+  motor1.setSpeed(speedVal);
+  motor2.setSpeed(speedVal);
+  motor3.setSpeed(speedVal);
+  motor4.setSpeed(speedVal);
+}
+
+void stopCar() {
+  motor1.setSpeed(0);
+  motor2.setSpeed(0);
+  motor3.setSpeed(0);
+  motor4.setSpeed(0);
+}
