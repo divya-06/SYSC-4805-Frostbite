@@ -1,0 +1,175 @@
+#include "CytronMotorDriver.h"
+
+// === Line Sensors ===
+#define LFS_L A7   // Left sensor analog pin
+#define LFS_M A5   // Middle sensor analog pin
+#define LFS_R A6   // Right sensor analog pin
+
+// === Motor Configuration for Arduino Due ===
+CytronMD motor1(PWM_DIR, 22, 40);   // Motor 1 -> DIR: 22, PWM: 40
+CytronMD motor2(PWM_DIR, 24, 42);   // Motor 2 -> DIR: 24, PWM: 42 (Left)
+CytronMD motor3(PWM_DIR, 26, 44);   // Motor 3 -> DIR: 26, PWM: 44 (Right)
+CytronMD motor4(PWM_DIR, 28, 46);   // Motor 4 -> DIR: 28, PWM: 46
+
+// === Encoders ===
+#define ENC_L A2   // Left encoder (Motor 2)
+#define ENC_R A3   // Right encoder (Motor 3)
+
+volatile long leftTicks  = 0;
+volatile long rightTicks = 0;
+
+// === Parameters ===
+int threshold = 1004;   // adjust based on sensor readings
+int speedFwd  = 150;    // 🚗 Forward speed (set to 150 per your request)
+int turnFast  = 160;    // turn ramp speeds
+int turnMed   = 120;
+int turnSlow  = 90;
+long TICKS_90 = 2750;   // calibrate for your robot
+
+// === Moving-Average Filter ===
+#define WINDOW_SIZE 4
+uint16_t bufL[WINDOW_SIZE] = {0}, bufM[WINDOW_SIZE] = {0}, bufR[WINDOW_SIZE] = {0};
+uint32_t sumL = 0, sumM = 0, sumR = 0;
+uint8_t  wIdx = 0;
+bool     filled = false;
+
+// === Encoder ISRs ===
+void isrLeft()  { leftTicks++; }
+void isrRight() { rightTicks++; }
+
+// === Helper: rolling average ===
+inline uint16_t updateAvg(uint16_t *buf, uint32_t &sum, uint16_t newVal) {
+  uint16_t old = buf[wIdx];
+  sum -= old;
+  buf[wIdx] = newVal;
+  sum += newVal;
+  uint8_t n = filled ? WINDOW_SIZE : (wIdx + 1);
+  return (uint16_t)(sum / n);
+}
+
+// === Motor control ===
+void setTank(int leftPWM, int rightPWM) {
+  motor1.setSpeed(leftPWM);
+  motor2.setSpeed(leftPWM);
+  motor3.setSpeed(rightPWM);
+  motor4.setSpeed(rightPWM);
+}
+
+void moveForward(int s) { setTank(s, s); }
+
+void stopCar() { setTank(0, 0); }
+
+// Short brake to prevent overshoot
+void brakeShort(int mag = 100, int ms = 100) {
+  setTank(-mag, -mag);
+  delay(ms);
+  stopCar();
+}
+
+// Turn 90° using encoder ticks (with ramp + brake)
+void turnInPlace90(int dir) {
+  noInterrupts();
+  leftTicks = 0;
+  rightTicks = 0;
+  interrupts();
+
+  long target = TICKS_90;
+  unsigned long startTime = millis();
+
+  auto drive = [&](int pwm) {
+    int L = (dir > 0) ? pwm : -pwm;
+    int R = (dir > 0) ? -pwm : pwm;
+    setTank(L, R);
+  };
+
+  while (true) {
+    long l, r;
+    noInterrupts();
+    l = leftTicks;
+    r = rightTicks;
+    interrupts();
+
+    long avg = (labs(l) + labs(r)) / 2;
+
+    if (avg < target * 0.7)
+      drive(turnFast);
+    else if (avg < target * 0.9)
+      drive(turnMed);
+    else
+      drive(turnSlow);
+
+    if (avg >= target || millis() - startTime > 4000)
+      break;
+
+    delay(2);
+  }
+
+  brakeShort(100, 100);
+
+  long l, r;
+  noInterrupts();
+  l = leftTicks;
+  r = rightTicks;
+  interrupts();
+
+  Serial.print("Turn done: L=");
+  Serial.print(l);
+  Serial.print(" R=");
+  Serial.print(r);
+  Serial.print(" avg=");
+  Serial.println((labs(l) + labs(r)) / 2);
+}
+
+// === Setup ===
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Start: Move forward (150 speed), turn 90° on black line.");
+
+  pinMode(ENC_L, INPUT_PULLUP);
+  pinMode(ENC_R, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_L), isrLeft,  RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_R), isrRight, RISING);
+}
+
+// === Main Loop ===
+void loop() {
+  // Read and average sensor values
+  uint16_t rawL = analogRead(LFS_L);
+  uint16_t rawM = analogRead(LFS_M);
+  uint16_t rawR = analogRead(LFS_R);
+
+  uint16_t avgL = updateAvg(bufL, sumL, rawL);
+  uint16_t avgM = updateAvg(bufM, sumM, rawM);
+  uint16_t avgR = updateAvg(bufR, sumR, rawR);
+
+  wIdx++;
+  if (wIdx >= WINDOW_SIZE) {
+    wIdx = 0;
+    filled = true;
+  }
+
+  // Print readings
+  Serial.print("AVG LMR: ");
+  Serial.print(avgL);
+  Serial.print(" ");
+  Serial.print(avgM);
+  Serial.print(" ");
+  Serial.println(avgR);
+
+  // Detect black
+  bool L = avgL > threshold;
+  bool M = avgM > threshold;
+  bool R = avgR > threshold;
+
+  if (L || M || R) {
+    stopCar();
+    Serial.println("Black detected — turning 90°...");
+    int dir = (L && !R) ? -1 : (R && !L) ? +1 : +1;  // Left/Right decision
+    turnInPlace90(dir);
+    Serial.println("Turn complete — moving forward again.");
+  } else {
+    moveForward(speedFwd);
+  }
+
+  delay(25);
+}
