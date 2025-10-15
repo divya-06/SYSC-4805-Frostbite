@@ -1,43 +1,60 @@
+#include <Arduino.h>
 #include "CytronMotorDriver.h"
 
-// === Line Sensors ===
-#define LFS_L A7   // Left sensor analog pin
-#define LFS_M A5   // Middle sensor analog pin
-#define LFS_R A6   // Right sensor analog pin
+// =================== Forward declarations to avoid Arduino reordering issues ===================
+enum State {
+  FORWARD,
+  STOP1_AFTER_LINE,
+  REVERSE,
+  STOP2_BEFORE_TURN,
+  TURN_CLOCKWISE,
+  STOP3_AFTER_TURN
+};
+void enterState(State s);  // prototype so the type is known everywhere
 
-// === Motor Configuration for Arduino Due ===
-CytronMD motor1(PWM_DIR, 22, 40);   // Motor 1 -> DIR: 22, PWM: 40
-CytronMD motor2(PWM_DIR, 24, 42);   // Motor 2 -> DIR: 24, PWM: 42 (Left)
-CytronMD motor3(PWM_DIR, 26, 44);   // Motor 3 -> DIR: 26, PWM: 44 (Right)
-CytronMD motor4(PWM_DIR, 28, 46);   // Motor 4 -> DIR: 28, PWM: 46
+// =================== Motors (your verified setup) ===================
+CytronMD motor1(PWM_DIR, 22, 40);   // Right front
+CytronMD motor2(PWM_DIR, 24, 42);   // Right rear  (encoder A2)
+CytronMD motor3(PWM_DIR, 26, 44);   // Left  rear  (encoder A3)
+CytronMD motor4(PWM_DIR, 28, 46);   // Left  front
 
-// === Encoders ===
-#define ENC_L A2   // Left encoder (Motor 2)
-#define ENC_R A3   // Right encoder (Motor 3)
+// =================== Encoders (optional; not required for the FSM) ===================
+const uint8_t ENC_RIGHT = A2;  // right-rear encoder (motor 2)
+const uint8_t ENC_LEFT  = A3;  // left-rear  encoder (motor 3)
+volatile long rightTicks = 0, leftTicks = 0;
+void isrRight() { rightTicks++; }
+void isrLeft()  { leftTicks++;  }
 
-volatile long leftTicks  = 0;
-volatile long rightTicks = 0;
+// =================== Line Sensors ===================
+#define LFS_L A7
+#define LFS_M A5
+#define LFS_R A6
 
-// === Parameters ===
-int threshold = 1004;   // adjust based on sensor readings
-int speedFwd  = 150;    // 🚗 Forward speed (set to 150 per your request)
-int turnFast  = 160;    // turn ramp speeds
-int turnMed   = 120;
-int turnSlow  = 90;
-long TICKS_90 = 2750;   // calibrate for your robot
+// --- Parameters ---
+int  threshold        = 1004;      // adjust after printing RAW values
+int  forwardSpeed     = 140;       // 0..255
+int  reverseSpeed     = 140;       // 0..255
+int  turnSpeed        = 150;       // 0..255 (per-side)
+unsigned long reverseTimeMs = 500; // 0.5 s reverse
+unsigned long settleStopMs  = 150; // small pause between phases
+unsigned long turnTimeMs    = 1500; // ~90° (tune this)
 
-// === Moving-Average Filter ===
+// Moving Average
 #define WINDOW_SIZE 4
 uint16_t bufL[WINDOW_SIZE] = {0}, bufM[WINDOW_SIZE] = {0}, bufR[WINDOW_SIZE] = {0};
 uint32_t sumL = 0, sumM = 0, sumR = 0;
 uint8_t  wIdx = 0;
 bool     filled = false;
 
-// === Encoder ISRs ===
-void isrLeft()  { leftTicks++; }
-void isrRight() { rightTicks++; }
+// Debounce: require consecutive detections
+const uint8_t DETECT_COUNT_REQ = 3;
+uint8_t detectCount = 0;
 
-// === Helper: rolling average ===
+// =================== FSM state vars ===================
+State state = FORWARD;
+unsigned long stateStart = 0;
+
+// ---------------- Helpers ----------------
 inline uint16_t updateAvg(uint16_t *buf, uint32_t &sum, uint16_t newVal) {
   uint16_t old = buf[wIdx];
   sum -= old;
@@ -47,129 +64,143 @@ inline uint16_t updateAvg(uint16_t *buf, uint32_t &sum, uint16_t newVal) {
   return (uint16_t)(sum / n);
 }
 
-// === Motor control ===
-void setTank(int leftPWM, int rightPWM) {
-  motor1.setSpeed(leftPWM);
-  motor2.setSpeed(leftPWM);
-  motor3.setSpeed(rightPWM);
-  motor4.setSpeed(rightPWM);
+void moveForward(int v) {
+  motor1.setSpeed(v);
+  motor2.setSpeed(v);
+  motor3.setSpeed(v);
+  motor4.setSpeed(v);
+}
+void moveBackward(int v) {
+  motor1.setSpeed(-v);
+  motor2.setSpeed(-v);
+  motor3.setSpeed(-v);
+  motor4.setSpeed(-v);
+}
+void turnCW(int v) { // clockwise: right side backward, left side forward
+  motor1.setSpeed(-v);  // Right front backward
+  motor2.setSpeed(-v);  // Right rear  backward
+  motor3.setSpeed( v);  // Left  rear  forward
+  motor4.setSpeed( v);  // Left  front forward
+}
+void stopCar() {
+  motor1.setSpeed(0);
+  motor2.setSpeed(0);
+  motor3.setSpeed(0);
+  motor4.setSpeed(0);
+}
+void enterState(State s) {
+  state = s;
+  stateStart = millis();
 }
 
-void moveForward(int s) { setTank(s, s); }
-
-void stopCar() { setTank(0, 0); }
-
-// Short brake to prevent overshoot
-void brakeShort(int mag = 100, int ms = 100) {
-  setTank(-mag, -mag);
-  delay(ms);
-  stopCar();
-}
-
-// Turn 90° using encoder ticks (with ramp + brake)
-void turnInPlace90(int dir) {
-  noInterrupts();
-  leftTicks = 0;
-  rightTicks = 0;
-  interrupts();
-
-  long target = TICKS_90;
-  unsigned long startTime = millis();
-
-  auto drive = [&](int pwm) {
-    int L = (dir > 0) ? pwm : -pwm;
-    int R = (dir > 0) ? -pwm : pwm;
-    setTank(L, R);
-  };
-
-  while (true) {
-    long l, r;
-    noInterrupts();
-    l = leftTicks;
-    r = rightTicks;
-    interrupts();
-
-    long avg = (labs(l) + labs(r)) / 2;
-
-    if (avg < target * 0.7)
-      drive(turnFast);
-    else if (avg < target * 0.9)
-      drive(turnMed);
-    else
-      drive(turnSlow);
-
-    if (avg >= target || millis() - startTime > 4000)
-      break;
-
-    delay(2);
-  }
-
-  brakeShort(100, 100);
-
-  long l, r;
-  noInterrupts();
-  l = leftTicks;
-  r = rightTicks;
-  interrupts();
-
-  Serial.print("Turn done: L=");
-  Serial.print(l);
-  Serial.print(" R=");
-  Serial.print(r);
-  Serial.print(" avg=");
-  Serial.println((labs(l) + labs(r)) / 2);
-}
-
-// === Setup ===
+// ---------------- Setup ----------------
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Start: Move forward (150 speed), turn 90° on black line.");
+  Serial.begin(115200);
 
-  pinMode(ENC_L, INPUT_PULLUP);
-  pinMode(ENC_R, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_L), isrLeft,  RISING);
-  attachInterrupt(digitalPinToInterrupt(ENC_R), isrRight, RISING);
+  pinMode(ENC_RIGHT, INPUT_PULLUP);
+  pinMode(ENC_LEFT,  INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_RIGHT), isrRight, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_LEFT),  isrLeft,  RISING);
+
+  Serial.println("Forward → detect line → stop → reverse 0.5s → stop → 90° CW turn → stop → repeat");
 }
 
-// === Main Loop ===
+// ---------------- Loop ----------------
 void loop() {
-  // Read and average sensor values
+  // Read sensors
   uint16_t rawL = analogRead(LFS_L);
   uint16_t rawM = analogRead(LFS_M);
   uint16_t rawR = analogRead(LFS_R);
 
+  // Update moving averages
   uint16_t avgL = updateAvg(bufL, sumL, rawL);
   uint16_t avgM = updateAvg(bufM, sumM, rawM);
   uint16_t avgR = updateAvg(bufR, sumR, rawR);
 
+  // Advance circular index
   wIdx++;
-  if (wIdx >= WINDOW_SIZE) {
-    wIdx = 0;
-    filled = true;
-  }
+  if (wIdx >= WINDOW_SIZE) { wIdx = 0; filled = true; }
 
-  // Print readings
-  Serial.print("AVG LMR: ");
-  Serial.print(avgL);
-  Serial.print(" ");
-  Serial.print(avgM);
-  Serial.print(" ");
-  Serial.println(avgR);
-
-  // Detect black
-  bool L = avgL > threshold;
-  bool M = avgM > threshold;
-  bool R = avgR > threshold;
-
-  if (L || M || R) {
-    stopCar();
-    Serial.println("Black detected — turning 90°...");
-    int dir = (L && !R) ? -1 : (R && !L) ? +1 : +1;  // Left/Right decision
-    turnInPlace90(dir);
-    Serial.println("Turn complete — moving forward again.");
+  bool lineDetectedNow = (avgL > threshold) || (avgM > threshold) || (avgR > threshold);
+  if (lineDetectedNow) {
+    if (detectCount < 255) detectCount++;
   } else {
-    moveForward(speedFwd);
+    // decay slowly to avoid chatter; change to =0 for stricter debounce
+    if (detectCount > 0) detectCount--;
+  }
+  bool lineDetectedStable = (detectCount >= DETECT_COUNT_REQ);
+
+  // --- Debug print every 200 ms ---
+  static unsigned long prevPrint = 0;
+  if (millis() - prevPrint >= 200) {
+    prevPrint = millis();
+    Serial.print("RAW LMR: "); Serial.print(rawL); Serial.print(" ");
+    Serial.print(rawM); Serial.print(" "); Serial.println(rawR);
+    Serial.print("AVG LMR: "); Serial.print(avgL); Serial.print(" ");
+    Serial.print(avgM); Serial.print(" "); Serial.println(avgR);
+    Serial.print("State: "); Serial.print(state);
+    Serial.print(" | DetCnt: "); Serial.print((int)detectCount);
+    noInterrupts(); long r=rightTicks, l=leftTicks; interrupts();
+    Serial.print(" | Ticks R/L: "); Serial.print(r); Serial.print("/"); Serial.println(l);
   }
 
-  delay(25);
+  // --- FSM ---
+  switch (state) {
+    case FORWARD:
+      moveForward(forwardSpeed);
+      if (lineDetectedStable) {
+        stopCar();
+        Serial.println("Line detected → STOP1");
+        enterState(STOP1_AFTER_LINE);
+      }
+      break;
+
+    case STOP1_AFTER_LINE:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
+        Serial.println("Reverse 0.5s");
+        enterState(REVERSE);
+      }
+      break;
+
+    case REVERSE:
+      moveBackward(reverseSpeed);
+      if (millis() - stateStart >= reverseTimeMs) {
+        stopCar();
+        Serial.println("Reverse done → STOP2");
+        enterState(STOP2_BEFORE_TURN);
+      }
+      break;
+
+    case STOP2_BEFORE_TURN:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
+        Serial.println("Turning CW ~90°");
+        // (Optional) zero encoders here if you later switch to tick-based turning
+        noInterrupts(); rightTicks = 0; leftTicks = 0; interrupts();
+        enterState(TURN_CLOCKWISE);
+      }
+      break;
+
+    case TURN_CLOCKWISE:
+      turnCW(turnSpeed);
+      if (millis() - stateStart >= turnTimeMs) {
+        stopCar();
+        Serial.println("Turn complete → STOP3");
+        enterState(STOP3_AFTER_TURN);
+      }
+      break;
+
+    case STOP3_AFTER_TURN:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
+        // Reset detection so the next segment waits for the next line
+        detectCount = 0;
+        Serial.println("Repeat cycle → FORWARD");
+        enterState(FORWARD);
+      }
+      break;
+  }
+
+  delay(20); // small loop delay for stability
 }
