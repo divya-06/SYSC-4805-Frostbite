@@ -3,6 +3,7 @@
 #include "LineSensors/LineSensors.h"
 #include "UltrasonicSensors/UltrasonicSensors.h"
 #include "Encoders/Encoders.h"
+#include "WatchdogTimer/WatchdogTimer.h"
 
 // =================== FSM ===================
 enum State {
@@ -38,6 +39,7 @@ void setup() {
   initLineSensors();
   initUltrasonic();
   initEncoders();
+  initWatchdog(10000);   // initialize watchdog timer (10s timeout)
 
   setLineThreshold(1004);
 
@@ -49,6 +51,8 @@ void loop() {
   // Update sensors
   updateLineSensors();
   updateUltrasonic();
+
+  resetWatchdog(); // reset the watchdog each iteration
 
   bool lineDetectedStable = isLineDetectedStable();
   bool obstacleStable = isObstacleStable();
