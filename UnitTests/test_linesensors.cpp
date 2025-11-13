@@ -1,7 +1,6 @@
 #include <ArduinoFake.h>
 #include <unity.h>
 
-// Some Arduino cores don't define Ax on native—ensure availability.
 #ifndef A5
 #define A5 5
 #endif
@@ -19,8 +18,7 @@ using namespace fakeit;
 static int readCounter = 0;
 
 static int analogReadScript(uint8_t pin) {
-  // First few cycles => below threshold, then above threshold to trigger stability.
-  // Map pins to L/M/R as per your wiring (A7=L, A5=M, A6=R in your code).
+  
   (void)pin;
   readCounter++;
   bool highPhase = (readCounter > 12); // after some cycles, switch to "line detected"
@@ -43,7 +41,7 @@ void test_linesensors_threshold_and_stability() {
   initLineSensors();
   setLineThreshold(1004); // default threshold used in code
 
-  // Act: run enough updates to fill moving average and debounce windows
+  // Run enough updates to fill moving average and debounce windows
   for (int i = 0; i < 30; ++i) {
     updateLineSensors();
   }
