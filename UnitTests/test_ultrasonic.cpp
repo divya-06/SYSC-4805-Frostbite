@@ -9,7 +9,7 @@ static int callIdx = 0;
 
 static unsigned long millisFake() { return fakeMillisVal; }
 static long pulseInFake(uint8_t, uint8_t, unsigned long) {
-  // Alternate between far (~50cm => ~2915us) and near (~15cm => ~875us)
+  // Far (~50cm => ~2915us) and near (~15cm => ~875us)
   callIdx++;
   return (callIdx % 2 == 0) ? 875 : 2915;
 }
@@ -25,10 +25,9 @@ void test_ultrasonic_stable_detection() {
 
   initUltrasonic();
 
-  // Mix of detections/non-detections
   for (int i = 0; i < 10; ++i) { updateUltrasonic(); tick50Hz(); }
-  // Force two consecutive "near" (obstacle) samples
-  callIdx = 0; // even calls => near
+  
+  callIdx = 0;
   for (int i = 0; i < 2; ++i) { updateUltrasonic(); tick50Hz(); }
 
   TEST_ASSERT_TRUE(isObstacleStable());
