@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include "MotorControl/MotorControl.h"
-#include "LineSensors/LineSensors.h"
-#include "UltrasonicSensors/UltrasonicSensors.h"
-#include "Encoders/Encoders.h"
-#include "WatchdogTimer/WatchdogTimer.h"
+#include "MotorControl.h"
+#include "LineSensors.h"
+#include "UltrasonicSensors.h"
+#include "Encoders.h"
+#include "WatchdogTimer.h"
 
 // =================== FSM ===================
 enum State {
@@ -24,9 +24,9 @@ void enterState(State s) {
 }
 
 // ------------- Parameters --------------
-int  forwardSpeed = 140;
-int  reverseSpeed = 140;
-int  turnSpeed = 150;
+int  forwardSpeed = 128;
+int  reverseSpeed = 128;
+int  turnSpeed = 128;
 unsigned long reverseTimeMs = 500; // 0.5 s reverse
 unsigned long settleStopMs = 150; // small pause
 unsigned long turnTimeMs = 1500; // ~90° (tune)
@@ -41,7 +41,7 @@ void setup() {
   initEncoders();
   initWatchdog(10000);   // initialize watchdog timer (10s timeout)
 
-  setLineThreshold(1004);
+  setLineThreshold(985);
 
   Serial.println("Forward → detect line OR obstacle ≤20cm → stop → reverse 0.5s → stop → 90° CW turn → stop → repeat");
 }

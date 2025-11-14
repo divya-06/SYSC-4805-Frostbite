@@ -2,9 +2,9 @@
 #include "LineSensors.h"
 
 // Pins
-#define LFS_L A7
+#define LFS_L A6
 #define LFS_M A5
-#define LFS_R A6
+#define LFS_R A7
 
 // Parameters (can be overridden by setLineThreshold)
 static int threshold = 1004;

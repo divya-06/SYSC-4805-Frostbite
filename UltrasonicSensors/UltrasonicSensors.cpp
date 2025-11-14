@@ -11,7 +11,7 @@ static float dist1 = 0.0f;
 static float dist2 = 0.0f;
 
 // Obstacle detection params
-const float OBSTACLE_THRESHOLD_CM = 20.0f;
+const float OBSTACLE_THRESHOLD_CM = 15.0f;
 const uint8_t OB_DETECT_COUNT_REQ = 2;
 static uint8_t obDetectCount = 0;
 

@@ -2,10 +2,10 @@
 #include "MotorControl.h"
 
 // Your original motor mapping
-static CytronMD motor1(PWM_DIR, 22, 40);   // Right front
-static CytronMD motor2(PWM_DIR, 24, 42);   // Right rear  (encoder A2)
-static CytronMD motor3(PWM_DIR, 26, 44);   // Left  rear  (encoder A3)
-static CytronMD motor4(PWM_DIR, 28, 46);   // Left  front
+static CytronMD motor1(PWM_DIR, 34, 26);   // Right front
+static CytronMD motor2(PWM_DIR, 36, 28);   // Right rear  (encoder A2)
+static CytronMD motor3(PWM_DIR, 35, 30);   // Left  rear  (encoder A3)
+static CytronMD motor4(PWM_DIR, 37, 32);   // Left  front
 
 void initMotors() {
   // Nothing special for Cytron, but keep for consistency/extension
