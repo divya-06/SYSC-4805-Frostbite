@@ -5,8 +5,7 @@ void setUp(){}
 void tearDown(){}
 
 void test_watchdog_init_and_kick() {
-  // This is a link/compile test under native.
-  // In hardware, you'd verify WDT reset behavior; here we just ensure callable API.
+  // In hardware, we verified WDT reset behaviour; here we just ensure callable API.
   initWatchdog(1000);
   for (int i = 0; i < 5; ++i) {
     resetWatchdog();
