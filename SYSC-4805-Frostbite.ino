@@ -4,6 +4,7 @@
 #include "UltrasonicSensors.h"
 #include "Encoders.h"
 #include "WatchdogTimer.h"
+#include "IRObstacleSensor.h"
 
 // =================== FSM ===================
 enum State {
@@ -40,8 +41,9 @@ void setup() {
   initUltrasonic();
   initEncoders();
   initWatchdog(10000);   // initialize watchdog timer (10s timeout)
+  initIrObstacleSensor();
 
-  setLineThreshold(985);
+  setLineThreshold(980);
 
   Serial.println("Forward → detect line OR obstacle ≤20cm → stop → reverse 0.5s → stop → 90° CW turn → stop → repeat");
 }
@@ -51,11 +53,19 @@ void loop() {
   // Update sensors
   updateLineSensors();
   updateUltrasonic();
+  updateIrObstacleSensor();
 
   resetWatchdog(); // reset the watchdog each iteration
 
+
+  Serial.print("STATE = ");
+  Serial.println(state);
   bool lineDetectedStable = isLineDetectedStable();
-  bool obstacleStable = isObstacleStable();
+  bool usObstacleStable = isObstacleStable();
+  bool irObstacleStable    = isIrObstacleStable();
+
+  bool obstacleStable      = usObstacleStable || irObstacleStable;
+
   uint16_t rawL = getRawL();
   uint16_t rawM = getRawM();
   uint16_t rawR = getRawR();
@@ -92,13 +102,13 @@ void loop() {
     case FORWARD:
       moveForward(forwardSpeed);
       // Trigger on line OR obstacle
-      if (lineDetectedStable || obstacleStable) {
+      if (/*lineDetectedStable || */obstacleStable) {
         stopCar();
-        if (obstacleStable) Serial.println("Obstacle ≤20cm → STOP1");
+        if (obstacleStable) Serial.println("Obstacle ≤50cm → STOP1");
         else Serial.println("Line detected → STOP1");
         enterState(STOP1_AFTER_LINE);
       }
-      break;
+      break; 
 
     case STOP1_AFTER_LINE:
       stopCar();
