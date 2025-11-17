@@ -62,6 +62,9 @@ It uses multiple sensors, motor control modules, and a finite state machine (FSM
 4. Upload the code to the board.
 5. Power on the robot and place it in the test arena.
 
+## Unit Testing
+For all unit tests, switch to the unitTest branch and follow the instructions in its README.
+
 ## Authors
 **Group 23 – Frostbite Team**  
 - Divya Dushyanthan  
