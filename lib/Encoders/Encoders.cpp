@@ -11,29 +11,51 @@ void isrRight() { rightTicks++; }
 void isrLeft()  { leftTicks++;  }
 
 void initEncoders() {
+#ifdef ARDUINO
   pinMode(ENC_RIGHT, INPUT_PULLUP);
   pinMode(ENC_LEFT,  INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENC_RIGHT), isrRight, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_LEFT),  isrLeft,  RISING);
+#endif
 }
 
 long getRightTicks() {
+#ifdef ARDUINO
   noInterrupts();
+#endif
+
   long r = rightTicks;
+
+#ifdef ARDUINO
   interrupts();
+#endif
+
   return r;
 }
 
 long getLeftTicks() {
+#ifdef ARDUINO
   noInterrupts();
+#endif
+
   long l = leftTicks;
+
+#ifdef ARDUINO
   interrupts();
+#endif
+
   return l;
 }
 
 void resetTicks() {
+#ifdef ARDUINO
   noInterrupts();
+#endif
+
   rightTicks = 0;
   leftTicks  = 0;
+
+#ifdef ARDUINO
   interrupts();
+#endif
 }

@@ -28,13 +28,10 @@ static int analogReadScript(uint8_t pin) {
   return highPhase ? 1100 : 100;
 }
 
-void setUp() {
-  ArduinoFakeReset();
-  readCounter = 0;
-}
 
 void test_linesensors_threshold_and_stability() {
-  // Arrange
+  ArduinoFakeReset();
+  readCounter = 0;
   When(Method(ArduinoFake(), pinMode)).AlwaysReturn();
   When(OverloadedMethod(ArduinoFake(), analogRead, int(uint8_t))).AlwaysDo(analogReadScript);
 
@@ -53,8 +50,3 @@ void test_linesensors_threshold_and_stability() {
   TEST_ASSERT_TRUE(getAvgR() >= 1004);
 }
 
-int main(int, char**) {
-  UNITY_BEGIN();
-  RUN_TEST(test_linesensors_threshold_and_stability);
-  return UNITY_END();
-}

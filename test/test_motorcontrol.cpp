@@ -5,9 +5,9 @@
 
 using namespace fakeit;
 
-void setUp() { ArduinoFakeReset(); }
 
 void test_motorcontrol_api_invocations() {
+  ArduinoFakeReset();
   When(Method(ArduinoFake(), pinMode)).AlwaysReturn();
   When(Method(ArduinoFake(), digitalWrite)).AlwaysReturn();
   When(Method(ArduinoFake(), analogWrite)).AlwaysReturn();
@@ -23,8 +23,3 @@ void test_motorcontrol_api_invocations() {
   TEST_ASSERT_TRUE(true);
 }
 
-int main(int, char**) {
-  UNITY_BEGIN();
-  RUN_TEST(test_motorcontrol_api_invocations);
-  return UNITY_END();
-}
