@@ -7,5 +7,4 @@ void initEncoders();
 long getRightTicks();
 long getLeftTicks();
 
-// Helper to reset
 void resetTicks();

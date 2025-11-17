@@ -1,22 +1,15 @@
-// lib/MotorControl/CytronMotorDriver.h
+// CytronMotorDriver.h
 #ifndef CYTRON_MOTOR_DRIVER_H
 #define CYTRON_MOTOR_DRIVER_H
 
-// Just something to pass as the first constructor argument.
-// Its actual value doesn't matter for unit tests.
+// Dummy mode value for constructor (not used in tests)
 constexpr int PWM_DIR = 0;
 
-// Minimal stub of the real CytronMD class
+// Minimal stub of CytronMD for unit testing
 class CytronMD {
 public:
-    CytronMD(int /*mode*/, int /*pwmPin*/, int /*dirPin*/) {
-        // Do nothing in the stub
-    }
-
-    void setSpeed(int /*speed*/) {
-        // Do nothing in the stub; tests only care that this is called,
-        // not that it actually drives real hardware.
-    }
+    CytronMD(int, int, int) {}
+    void setSpeed(int) {}
 };
 
-#endif // CYTRON_MOTOR_DRIVER_H
+#endif

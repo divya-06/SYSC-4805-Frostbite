@@ -2,35 +2,27 @@
 #include "WatchdogTimer.h"
 
 #ifdef ARDUINO
-#include <sam.h>   // Access to WDT registers on Arduino Due
+#include <sam.h>
 
-// ======== REAL HARDWARE IMPLEMENTATION ========
+// Hardware watchdog (Arduino Due)
 void initWatchdog(unsigned long timeoutMs) {
-    // Convert ms to watchdog ticks (~1 tick ≈ 16ms at 32kHz)
-    uint32_t timeoutValue = (timeoutMs / 16);
-    if (timeoutValue > 4095) timeoutValue = 4095;  // 12-bit max
+    uint32_t ticks = timeoutMs / 16;     // ~16 ms per tick
+    if (ticks > 4095) ticks = 4095;      // 12-bit max
 
-    WDT->WDT_MR = 0x00000000      // Disable WDT in Wait Mode
-                | WDT_MR_WDRSTEN  // Reset MCU on timeout
-                | WDT_MR_WDDBGHLT // Pause in debug mode
-                | WDT_MR_WDV(timeoutValue);
+    WDT->WDT_MR =
+        WDT_MR_WDRSTEN |                 // Reset on timeout
+        WDT_MR_WDDBGHLT |                // Halt in debug mode
+        WDT_MR_WDV(ticks);
 }
 
 void resetWatchdog() {
-    // Restart command
     WDT->WDT_CR = WDT_CR_KEY(0xA5) | WDT_CR_WDRSTT;
 }
 
 #else
-// ======== NATIVE TEST BUILD (NO HARDWARE) ========
 
-// Stub: do nothing, just satisfy linker
-void initWatchdog(unsigned long timeoutMs) {
-    (void)timeoutMs;
-}
-
-// Stub: do nothing
-void resetWatchdog() {
-}
+// Native test stubs
+void initWatchdog(unsigned long) {}
+void resetWatchdog() {}
 
 #endif

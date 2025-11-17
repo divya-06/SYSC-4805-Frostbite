@@ -2,31 +2,28 @@
 #include "UltrasonicSensors.h"
 
 // Pins
-#define TRIG1 7
-#define ECHO1 6
-#define TRIG2 4
-#define ECHO2 3
+const uint8_t TRIG1 = 7;
+const uint8_t ECHO1 = 6;
+const uint8_t TRIG2 = 4;
+const uint8_t ECHO2 = 3;
 
 static float dist1 = 0.0f;
 static float dist2 = 0.0f;
 
-// Obstacle detection params
-const float OBSTACLE_THRESHOLD_CM = 15.0f;
-const uint8_t OB_DETECT_COUNT_REQ = 2;
+// Obstacle detection
+static const float  OBSTACLE_THRESHOLD_CM = 15.0f;
+static const uint8_t OB_DETECT_COUNT_REQ  = 2;
 static uint8_t obDetectCount = 0;
 
-static float getDistanceCM(int trigPin, int echoPin) {
-    // Real hardware behavior. In native tests this is never called
-    // (we override behavior in updateUltrasonic()).
+static float getDistanceCM(uint8_t trigPin, uint8_t echoPin) {
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
-    long duration = pulseIn(echoPin, HIGH, 50000); // 50 ms timeout
-    float distance = duration * 0.0343f / 2.0f;    // cm
-    return distance; // 0 if timeout
+    long duration = pulseIn(echoPin, HIGH, 50000);  // 50 ms timeout
+    return duration * 0.0343f / 2.0f;               // cm
 }
 
 void initUltrasonic() {
@@ -40,44 +37,35 @@ void initUltrasonic() {
 
 void updateUltrasonic() {
     static unsigned long lastUS = 0;
+    bool obstacleNow = false;
 
 #ifdef ARDUINO
-    // ===== Arduino (real robot) path =====
-    // Keep the original 50 ms timing gate
-    if (millis() - lastUS < 50) {
-        return;
-    }
+    if (millis() - lastUS < 50) return;
     lastUS = millis();
 
     dist1 = getDistanceCM(TRIG1, ECHO1);
     dist2 = getDistanceCM(TRIG2, ECHO2);
 
-    bool obstacleNow = false;
     if ((dist1 > 0 && dist1 <= OBSTACLE_THRESHOLD_CM) ||
         (dist2 > 0 && dist2 <= OBSTACLE_THRESHOLD_CM)) {
         obstacleNow = true;
     }
 #else
-    // ===== Native unit-test path =====
-    // Simulate a constant near obstacle (~10 cm)
+    // Native test path
     dist1 = 10.0f;
     dist2 = 10.0f;
-    bool obstacleNow = true;
+    obstacleNow = true;
 #endif
 
     if (obstacleNow) {
-        if (obDetectCount < 255) {
-            obDetectCount++;
-        }
+        if (obDetectCount < 255) ++obDetectCount;
     } else {
-        if (obDetectCount > 0) {
-            obDetectCount--;
-        }
+        if (obDetectCount > 0) --obDetectCount;
     }
 }
 
 bool isObstacleStable() {
-    return (obDetectCount >= OB_DETECT_COUNT_REQ);
+    return obDetectCount >= OB_DETECT_COUNT_REQ;
 }
 
 float getDist1() { return dist1; }

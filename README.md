@@ -1,70 +1,103 @@
-# SYSC-4805-Frostbite
+# Unit Test Branch README
 
-## Overview
-Frostbite is an autonomous snow-clearing robot designed for the SYSC 4805 Computer Systems Design Lab at Carleton University. 
-The robot operates within a 6 m² arena bordered by black tape and autonomously detects and pushes simulated snow (wooden cubes) outside the boundary. 
-It uses multiple sensors, motor control modules, and a finite state machine (FSM) to achieve fully autonomous operation.
-
-## Features
-- Fully autonomous motion using FSM control logic.
-- Line detection for boundary avoidance.
-- Ultrasonic obstacle detection for static and moving obstacles.
-- Independent motor control with Cytron motor drivers.
-- Encoder-based movement tracking.
-- Modular software architecture for testing and integration.
-- Watchdog timer for automatic recovery from software freezes.
+This branch contains the unit testing environment for the Frostbite
+project. All test files are located in the `test/` directory, and the
+`platformio.ini` configuration file is located at the project root.
 
 ## Project Structure
+
 ```
-/SYSC-4805-Frostbite
+Frostbite/
 │
-├── MotorControl/
-│   ├── MotorControl.h
-│   └── MotorControl.cpp
+├── lib/
+│   ├── Encoders/
+│   │   ├── Encoders.cpp
+│   │   └── Encoders.h
+│   │
+│   ├── LineSensors/
+│   │   ├── LineSensors.cpp
+│   │   └── LineSensors.h
+│   │
+│   ├── MotorControl/
+│   │   ├── CytronMotorDriver.h
+│   │   ├── MotorControl.cpp
+│   │   └── MotorControl.h
+│   │
+│   ├── UltrasonicSensors/
+│   │   ├── UltrasonicSensors.cpp
+│   │   └── UltrasonicSensors.h
+│   │
+│   └── WatchdogTimer/
+│       ├── WatchdogTimer.cpp
+│       └── WatchdogTimer.h
 │
-├── LineSensors/
-│   ├── LineSensors.h
-│   └── LineSensors.cpp
+├── src/
+│   └── main.cpp      // not used in native tests
 │
-├── UltrasonicSensors/
-│   ├── UltrasonicSensors.h
-│   └── UltrasonicSensors.cpp
+├── test/
+│   ├── README
+│   ├── test_encoders.cpp
+│   ├── test_linesensors.cpp
+│   ├── test_motorcontrol.cpp
+│   ├── test_runner.cpp
+│   ├── test_ultrasonic.cpp
+│   └── test_watchdog.cpp
 │
-├── Encoders/
-│   ├── Encoders.h
-│   └── Encoders.cpp
-│
-├── WatchdogTimer/
-│   ├── WatchdogTimer.h
-│   └── WatchdogTimer.cpp
-│
-└── main.ino
+├── platformio.ini
+└── README.md         // this file
+
 ```
 
-## Hardware Components
-- **Microcontroller:** Arduino Due  
-- **Motor Driver:** Cytron MD10C x4  
-- **Sensors:** 3x line sensors (analog), 2x ultrasonic sensors (HC-SR04)  
-- **Encoders:** 2x wheel encoders  
-- **Power Supply:** 12V Li-ion battery pack  
+## Environment Configuration
 
-## How It Works
-1. **FORWARD:** Robot drives forward until a boundary or obstacle is detected.  
-2. **STOP:** Robot halts briefly to stabilize readings.  
-3. **REVERSE:** Moves backward for a set time.  
-4. **TURN CLOCKWISE:** Performs a 90° turn to find a new path.  
-5. **REPEAT:** The cycle continues autonomously until the area is cleared.
+The `platformio.ini` defines two environments:
 
-## Setup Instructions
-1. Clone this repository to your Arduino project folder.
-2. Open `main.ino` in the Arduino IDE.
-3. Connect your Arduino Due and select the correct COM port.
-4. Upload the code to the board.
-5. Power on the robot and place it in the test arena.
+### 1. `env:due`
 
-## Authors
-**Group 23 – Frostbite Team**  
-- Divya Dushyanthan  
-- Saja Fawagreh  
-- Elizabeth Lorange  
-- Vaanathy Thaneskumar  
+Used for compiling actual firmware for the Arduino Due. Uses the Arduino
+framework and ArduinoFake library.
+
+### 2. `env:native`
+
+Used for running unit tests on your computer (no hardware needed). Uses
+Unity test framework + ArduinoFake.
+
+## How to Run Unit Tests
+
+### 1. Install PlatformIO Core
+
+    py -m pip install --user platformio
+
+### 2. Run all tests using the native environment
+
+Inside the project root:
+
+    py -m platformio test -e native
+
+This will compile and run all test files under the `test/` directory.
+
+## Purpose of Test Files
+
+### test_encoders.cpp
+
+Tests encoder tick reset and initialization behavior.
+
+### test_linesensors.cpp
+
+Tests line sensor thresholding, averaging, and stable detection logic.
+
+### test_motorcontrol.cpp
+
+Smoke‑tests the public motor control API to ensure no crashes.
+
+### test_ultrasonic.cpp
+
+Tests ultrasonic distance reading and stable obstacle detection.
+
+### test_watchdog.cpp
+
+Ensures watchdog initialization and kick functions are callable.
+
+### test_runner.cpp
+
+Registers and executes all unit test functions.

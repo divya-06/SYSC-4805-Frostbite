@@ -5,11 +5,11 @@
 using namespace fakeit;
 
 void test_encoders_init_and_reset() {
-    ArduinoFakeReset();
-    When(Method(ArduinoFake(), pinMode)).AlwaysReturn();
+  ArduinoFakeReset();
+  When(Method(ArduinoFake(), pinMode)).AlwaysReturn();
 
-    resetTicks();
+  resetTicks();
 
-    TEST_ASSERT_EQUAL(0, getRightTicks());
-    TEST_ASSERT_EQUAL(0, getLeftTicks());
+  TEST_ASSERT_EQUAL(0, getRightTicks());
+  TEST_ASSERT_EQUAL(0, getLeftTicks());
 }
