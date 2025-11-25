@@ -1,16 +1,19 @@
-// UltrasonicSensors.h
 #pragma once
 #include <Arduino.h>
 
-// Call in setup()
+ 
+// Setup
 void initUltrasonic();
 
-// Call regularly in loop()
+ 
+// Update
 void updateUltrasonic();
 
-// Get latest distances (cm)
+ 
+// Distance Values
 float getDist1();
 float getDist2();
 
-// Stable obstacle detection flag
+ 
+// Stable Detection
 bool isObstacleStable();
