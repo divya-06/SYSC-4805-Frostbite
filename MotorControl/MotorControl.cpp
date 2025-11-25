@@ -32,6 +32,14 @@ void turnCW(int v) { // clockwise: right side backward, left side forward
   motor4.setSpeed( v);  // Left  front forward
 }
 
+void turnCCW(int v) { // counter clockwise
+  motor1.setSpeed(v);  // Right front backward
+  motor2.setSpeed(v);  // Right rear  backward
+  motor3.setSpeed(-v);  // Left  rear  forward
+  motor4.setSpeed(-v);  // Left  front forward
+}
+
+
 void stopCar() {
   motor1.setSpeed(0);
   motor2.setSpeed(0);
