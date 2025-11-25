@@ -1,15 +1,23 @@
-// Encoders.cpp
+// -------- Includes --------
 #include "Encoders.h"
 
-const uint8_t ENC_RIGHT = A2;  // right-rear encoder (motor 2)
-const uint8_t ENC_LEFT  = A3;  // left-rear  encoder (motor 3)
+ 
+// -------- Encoder Pins --------
+const uint8_t ENC_RIGHT = A2;
+const uint8_t ENC_LEFT  = A3;
 
+ 
+// -------- Tick Counters --------
 static volatile long rightTicks = 0;
 static volatile long leftTicks  = 0;
 
+ 
+// -------- ISR Handlers --------
 void isrRight() { rightTicks++; }
 void isrLeft()  { leftTicks++;  }
 
+ 
+// -------- Encoder Setup --------
 void initEncoders() {
   pinMode(ENC_RIGHT, INPUT_PULLUP);
   pinMode(ENC_LEFT,  INPUT_PULLUP);
@@ -17,6 +25,8 @@ void initEncoders() {
   attachInterrupt(digitalPinToInterrupt(ENC_LEFT),  isrLeft,  RISING);
 }
 
+ 
+// -------- Get Right Ticks --------
 long getRightTicks() {
   noInterrupts();
   long r = rightTicks;
@@ -24,6 +34,8 @@ long getRightTicks() {
   return r;
 }
 
+ 
+// -------- Get Left Ticks --------
 long getLeftTicks() {
   noInterrupts();
   long l = leftTicks;
@@ -31,6 +43,8 @@ long getLeftTicks() {
   return l;
 }
 
+ 
+// -------- Reset Both Ticks --------
 void resetTicks() {
   noInterrupts();
   rightTicks = 0;
