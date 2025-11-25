@@ -1,9 +1,10 @@
-// WatchdogTimer.h
 #pragma once
 #include <Arduino.h>
 
-// Initialize the watchdog timer with a given timeout in milliseconds
+ 
+// Setup
 void initWatchdog(unsigned long timeoutMs);
 
-// Reset the watchdog to prevent system reset
+ 
+// Reset
 void resetWatchdog();
