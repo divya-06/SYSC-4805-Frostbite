@@ -7,17 +7,17 @@
 #define LFS_R A7
 
 // Parameters (can be overridden by setLineThreshold)
-static int threshold = 1004;
+static int threshold = 930;
 
 // Moving average
-#define WINDOW_SIZE 4
+#define WINDOW_SIZE 3
 static uint16_t bufL[WINDOW_SIZE] = {0}, bufM[WINDOW_SIZE] = {0}, bufR[WINDOW_SIZE] = {0};
 static uint32_t sumL = 0, sumM = 0, sumR = 0;
 static uint8_t  wIdx = 0;
 static bool filled = false;
 
 // Debounce for line: require consecutive detections
-const uint8_t DETECT_COUNT_REQ = 3;
+const uint8_t DETECT_COUNT_REQ = 7;
 static uint8_t detectCount = 0;
 
 // Raw + avg storage
@@ -62,7 +62,7 @@ void updateLineSensors() {
   }
 
   // Line detection with debounce
-  bool lineDetectedNow = (avgL > threshold) || (avgM > threshold) || (avgR > threshold);
+  bool lineDetectedNow = (avgL > threshold) || (avgR > threshold);
 
   if (lineDetectedNow) {
     if (detectCount < 255) detectCount++;
