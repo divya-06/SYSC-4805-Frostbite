@@ -1,16 +1,15 @@
-// -------- Header Guard --------
 #pragma once
 #include <Arduino.h>
 
  
-// -------- Setup --------
+// Setup
 void initEncoders();
 
  
-// -------- Tick Access --------
+// Tick Access
 long getRightTicks();
 long getLeftTicks();
 
  
-// -------- Reset --------
+// Reset
 void resetTicks();
