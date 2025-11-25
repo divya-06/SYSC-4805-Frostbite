@@ -1,23 +1,30 @@
-// LineSensors.h
 #pragma once
 #include <Arduino.h>
 
-// Call once in setup()
+ 
+// Setup
 void initLineSensors();
 
-// Call every loop to update readings
+ 
+// Update
 void updateLineSensors();
 
-// Getters for debug / logic
+ 
+// Raw Values
 uint16_t getRawL();
 uint16_t getRawM();
 uint16_t getRawR();
 
+ 
+// Averaged Values
 uint16_t getAvgL();
 uint16_t getAvgM();
 uint16_t getAvgR();
 
+ 
+// Stable Detection
 bool isLineDetectedStable();
 
-// Adjust threshold for line detection
+ 
+// Threshold
 void setLineThreshold(int t);
