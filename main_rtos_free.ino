@@ -1,4 +1,4 @@
-#include <Arduino.h>  
+#include <Arduino.h>
 #include <FreeRTOS.h>
 #include <task.h>
 #include <timers.h>
@@ -10,9 +10,8 @@
 #include "Encoders.h"
 #include "WatchdogTimer.h"
 
-// =========================================================
-// SHARED VOLATILE SENSOR STATE (written by sensor tasks)
-// =========================================================
+ 
+// -------- Shared Sensor Variables --------
 volatile bool lineDetectedStable = false;
 volatile bool obstacleStable     = false;
 
@@ -21,19 +20,16 @@ volatile uint16_t avgL, avgM, avgR;
 volatile float d1, d2;
 volatile long rTicks, lTicks;
 
-// =========================================================
-// TURNING DIRECTION ENUM
-// =========================================================
+ 
+// -------- Turn Direction Enum --------
 enum TurnDir {
   TURN_DIR_CW,
   TURN_DIR_CCW
 };
+volatile TurnDir turnDirection = TURN_DIR_CW;
 
-volatile TurnDir turnDirection = TURN_DIR_CW;   // default
-
-// =========================================================
-// FSM STATE MACHINE
-// =========================================================
+ 
+// -------- FSM States --------
 enum State {
   FORWARD,
   STOP1_AFTER_LINE,
@@ -46,14 +42,15 @@ enum State {
 State state = FORWARD;
 unsigned long stateStart = 0;
 
+ 
+// -------- State Entry Helper --------
 void enterState(State s) {
   state = s;
   stateStart = millis();
 }
 
-// =========================================================
-// PARAMETERS
-// =========================================================
+ 
+// -------- Movement Parameters --------
 int forwardSpeed  = 255;
 int reverseSpeed  = 255;
 int turnSpeed     = 255;
@@ -62,19 +59,17 @@ unsigned long reverseTimeMs = 500;
 unsigned long settleStopMs  = 150;
 unsigned long turnTimeMs    = 1125;
 
+ 
+// -------- Task Periods --------
 const TickType_t LINE_PERIOD_TICKS   = pdMS_TO_TICKS(5);
 const TickType_t ULTRA_PERIOD_TICKS  = pdMS_TO_TICKS(10);
 const TickType_t FSM_PERIOD_TICKS    = pdMS_TO_TICKS(5);
 const TickType_t DEBUG_PERIOD_TICKS  = pdMS_TO_TICKS(200);
 
-// =========================================================
-// TASKS
-// =========================================================
-
-// ----------------- LINE SENSOR TASK ----------------------
+ 
+// -------- Line Sensor Task --------
 void vTaskLineSensors(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
-
   for (;;) {
     updateLineSensors();
     lineDetectedStable = isLineDetectedStable();
@@ -86,10 +81,10 @@ void vTaskLineSensors(void *pv) {
   }
 }
 
-// ----------------- ULTRASONIC TASK -----------------------
+ 
+// -------- Ultrasonic Sensor Task --------
 void vTaskUltrasonic(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
-
   for (;;) {
     updateUltrasonic();
 
@@ -101,7 +96,8 @@ void vTaskUltrasonic(void *pv) {
   }
 }
 
-// ------------------- FSM TASK ----------------------------
+ 
+// -------- FSM Task (main robot logic) --------
 void vTaskFSM(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
 
@@ -110,7 +106,6 @@ void vTaskFSM(void *pv) {
 
       case FORWARD:
         moveForward(forwardSpeed);
-
         if (lineDetectedStable || obstacleStable) {
           stopCar();
           enterState(STOP1_AFTER_LINE);
@@ -138,9 +133,7 @@ void vTaskFSM(void *pv) {
 
           resetTicks();
 
-          // =====================================================
-          // RANDOM TURN DIRECTION: CLOCKWISE or COUNTER-CLOCKWISE
-          // =====================================================
+          // pick CW or CCW randomly
           if (random(0, 2) == 0)
             turnDirection = TURN_DIR_CW;
           else
@@ -151,7 +144,6 @@ void vTaskFSM(void *pv) {
         break;
 
       case TURN_CLOCKWISE:
-        // Turn either CW or CCW based on selection
         if (turnDirection == TURN_DIR_CW)
           turnCW(turnSpeed);
         else
@@ -166,11 +158,8 @@ void vTaskFSM(void *pv) {
       case STOP3_AFTER_TURN:
         stopCar();
         if (millis() - stateStart >= settleStopMs) {
-
-          // Reset detection flags so robot does not immediately re-trigger
           lineDetectedStable = false;
           obstacleStable = false;
-
           enterState(FORWARD);
         }
         break;
@@ -180,7 +169,8 @@ void vTaskFSM(void *pv) {
   }
 }
 
-// ------------------- WATCHDOG TASK ------------------------
+ 
+// -------- Watchdog Task --------
 void vTaskWatchdog(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
   for (;;) {
@@ -189,10 +179,10 @@ void vTaskWatchdog(void *pv) {
   }
 }
 
-// ------------------- DEBUG TASK ---------------------------
+ 
+// -------- Debug Print Task --------
 void vTaskDebug(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
-
   for (;;) {
     Serial.println("====== DEBUG ======");
     
@@ -233,12 +223,11 @@ void vTaskDebug(void *pv) {
   }
 }
 
-// =========================================================
-// SETUP
-// =========================================================
+ 
+// -------- Setup --------
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {;}
+  while (!Serial) {}
   delay(300);
 
   initMotors();
@@ -248,10 +237,8 @@ void setup() {
   initWatchdog(120000);
 
   setLineThreshold(1000);
+  randomSeed(analogRead(A0));
 
-  randomSeed(analogRead(A0));  // randomness for turns
-
-  // Create tasks
   xTaskCreate(vTaskLineSensors, "line",      256,  NULL, 3, NULL);
   xTaskCreate(vTaskUltrasonic,  "ultra",     512,  NULL, 2, NULL);
   xTaskCreate(vTaskFSM,         "fsm",       512,  NULL, 4, NULL);
@@ -266,6 +253,6 @@ void setup() {
   }
 }
 
-void loop() {
-  // unused under FreeRTOS
-}
+ 
+// -------- Loop (unused) --------
+void loop() {}
