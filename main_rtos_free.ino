@@ -11,7 +11,7 @@
 #include "WatchdogTimer.h"
 
  
-// -------- Shared Sensor Variables --------
+// Shared Sensor Variables 
 volatile bool lineDetectedStable = false;
 volatile bool obstacleStable     = false;
 
@@ -21,7 +21,7 @@ volatile float d1, d2;
 volatile long rTicks, lTicks;
 
  
-// -------- Turn Direction Enum --------
+// Turn Direction Enum 
 enum TurnDir {
   TURN_DIR_CW,
   TURN_DIR_CCW
@@ -29,7 +29,7 @@ enum TurnDir {
 volatile TurnDir turnDirection = TURN_DIR_CW;
 
  
-// -------- FSM States --------
+// FSM States 
 enum State {
   FORWARD,
   STOP1_AFTER_LINE,
@@ -43,14 +43,14 @@ State state = FORWARD;
 unsigned long stateStart = 0;
 
  
-// -------- State Entry Helper --------
+// State Entry Helper
 void enterState(State s) {
   state = s;
   stateStart = millis();
 }
 
  
-// -------- Movement Parameters --------
+// Movement Parameters 
 int forwardSpeed  = 255;
 int reverseSpeed  = 255;
 int turnSpeed     = 255;
@@ -60,14 +60,14 @@ unsigned long settleStopMs  = 150;
 unsigned long turnTimeMs    = 1125;
 
  
-// -------- Task Periods --------
+// Task Periods 
 const TickType_t LINE_PERIOD_TICKS   = pdMS_TO_TICKS(5);
 const TickType_t ULTRA_PERIOD_TICKS  = pdMS_TO_TICKS(10);
 const TickType_t FSM_PERIOD_TICKS    = pdMS_TO_TICKS(5);
 const TickType_t DEBUG_PERIOD_TICKS  = pdMS_TO_TICKS(200);
 
  
-// -------- Line Sensor Task --------
+// Line Sensor Task 
 void vTaskLineSensors(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
   for (;;) {
@@ -82,7 +82,7 @@ void vTaskLineSensors(void *pv) {
 }
 
  
-// -------- Ultrasonic Sensor Task --------
+// Ultrasonic Sensor Task
 void vTaskUltrasonic(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
   for (;;) {
@@ -97,7 +97,7 @@ void vTaskUltrasonic(void *pv) {
 }
 
  
-// -------- FSM Task (main robot logic) --------
+// FSM Task : main robot logic
 void vTaskFSM(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
 
@@ -170,7 +170,7 @@ void vTaskFSM(void *pv) {
 }
 
  
-// -------- Watchdog Task --------
+// Watchdog Task 
 void vTaskWatchdog(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
   for (;;) {
@@ -180,7 +180,7 @@ void vTaskWatchdog(void *pv) {
 }
 
  
-// -------- Debug Print Task --------
+// Debug Print Task 
 void vTaskDebug(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
   for (;;) {
@@ -224,7 +224,7 @@ void vTaskDebug(void *pv) {
 }
 
  
-// -------- Setup --------
+// Setup
 void setup() {
   Serial.begin(115200);
   while (!Serial) {}
@@ -253,6 +253,3 @@ void setup() {
   }
 }
 
- 
-// -------- Loop (unused) --------
-void loop() {}
