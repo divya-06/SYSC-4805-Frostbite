@@ -11,25 +11,27 @@ static volatile long rightTicks = 0;
 static volatile long leftTicks  = 0;
 
  
-// ISR Handlers
+// ISR Handlers detects rising edge pulse
 void isrRight() { rightTicks++; }
 void isrLeft()  { leftTicks++;  }
 
  
 // Encoder Setup
 void initEncoders() {
-  pinMode(ENC_RIGHT, INPUT_PULLUP);
+  pinMode(ENC_RIGHT, INPUT_PULLUP); // pull up resistors 
   pinMode(ENC_LEFT,  INPUT_PULLUP);
+
+ //ISR on rising edge (1 tick)
   attachInterrupt(digitalPinToInterrupt(ENC_RIGHT), isrRight, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_LEFT),  isrLeft,  RISING);
 }
 
  
-// Get Right Ticks
+// Get Right Ticks 
 long getRightTicks() {
-  noInterrupts();
-  long r = rightTicks;
-  interrupts();
+  noInterrupts(); // pause tick count
+  long r = rightTicks; // update current value
+  interrupts(); // resume tick count
   return r;
 }
 
@@ -45,8 +47,8 @@ long getLeftTicks() {
  
 // Reset Both Ticks
 void resetTicks() {
-  noInterrupts();
-  rightTicks = 0;
-  leftTicks  = 0;
-  interrupts();
+  noInterrupts(); // prevents other ISR to safely update values
+  rightTicks = 0; // reset right tick
+  leftTicks  = 0; // reset left tick
+  interrupts(); 
 }
