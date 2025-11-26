@@ -6,7 +6,7 @@
 #include "WatchdogTimer.h"
 #include "IRObstacleSensor.h"
 
-// =================== FSM ===================
+// FSM 
 enum State {
   FORWARD,
   STOP1_AFTER_LINE,
@@ -24,7 +24,7 @@ void enterState(State s) {
   stateStart = millis();
 }
 
-// ------------- Parameters --------------
+// Parameters 
 int  forwardSpeed = 128;
 int  reverseSpeed = 128;
 int  turnSpeed = 128;
@@ -32,7 +32,7 @@ unsigned long reverseTimeMs = 500; // 0.5 s reverse
 unsigned long settleStopMs = 150; // small pause
 unsigned long turnTimeMs = 1500; // ~90° (tune)
 
-// ---------------- Setup ----------------
+// Setup
 void setup() {
   Serial.begin(115200);
 
@@ -48,7 +48,7 @@ void setup() {
   Serial.println("Forward → detect line OR obstacle ≤20cm → stop → reverse 0.5s → stop → 90° CW turn → stop → repeat");
 }
 
-// ---------------- Loop ----------------
+// Loop
 void loop() {
   // Update sensors
   updateLineSensors();
@@ -77,7 +77,7 @@ void loop() {
   long rTicks = getRightTicks();
   long lTicks = getLeftTicks();
 
-  // --- Debug print every 200 ms ---
+  // Debug print every 200 ms 
   static unsigned long prevPrint = 0;
   if (millis() - prevPrint >= 200) {
     prevPrint = millis();
@@ -97,7 +97,7 @@ void loop() {
     Serial.print("/"); Serial.println(lTicks);
   }
 
-  // --- FSM ---
+  // FSM
   switch (state) {
     case FORWARD:
       moveForward(forwardSpeed);
