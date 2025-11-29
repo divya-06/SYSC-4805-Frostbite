@@ -8,7 +8,7 @@
 
  
 // Threshold
-static int threshold = 930;
+static int threshold = 1015;
 
  
 // Moving Average Buffers
