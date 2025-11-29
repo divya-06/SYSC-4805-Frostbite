@@ -58,7 +58,7 @@ int turnSpeed     = 255;
 unsigned long reverseTimeMs = 500;
 unsigned long settleStopMs  = 150;
 
-const long TURN_TICKS_TARGET = 11 // ~135°
+const long TURN_TICKS_TARGET = 11; // ~135°
 
  
 // Task Periods 
