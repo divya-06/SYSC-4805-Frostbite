@@ -81,3 +81,4 @@ bool isObstacleStable() {
 // Getters
 float getDist1() { return dist1; }
 float getDist2() { return dist2; }
+float getDist3() { return dist3; }
