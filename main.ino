@@ -35,7 +35,7 @@ enum State {
   STOP1_AFTER_LINE,
   REVERSE,
   STOP2_BEFORE_TURN,
-  TURN_CLOCKWISE,
+  TURNING,
   STOP3_AFTER_TURN
 };
 
@@ -57,7 +57,8 @@ int turnSpeed     = 255;
 
 unsigned long reverseTimeMs = 500;
 unsigned long settleStopMs  = 150;
-unsigned long turnTimeMs    = 1125;
+
+const long TURN_TICKS_TARGET = 11 // ~135°
 
  
 // Task Periods 
@@ -139,17 +140,22 @@ void vTaskFSM(void *pv) {
           else
             turnDirection = TURN_DIR_CCW;
 
-          enterState(TURN_CLOCKWISE);
+          enterState(TURNING);
         }
         break;
 
-      case TURN_CLOCKWISE:
+      case TURNING:
         if (turnDirection == TURN_DIR_CW)
           turnCW(turnSpeed);
         else
           turnCCW(turnSpeed);
-
-        if (millis() - stateStart >= turnTimeMs) {
+       
+        // Use encoder ticks to decide when to stop
+        long absR = labs(rTicks);
+        long absL = labs(lTicks);
+        long avgTicks = (labs(rTicks) + labs(lTicks)) / 2;
+       
+        if (maxTicks >= TURN_TICKS_TARGET) {
           stopCar();
           enterState(STOP3_AFTER_TURN);
         }
