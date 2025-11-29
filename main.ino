@@ -153,7 +153,7 @@ void vTaskFSM(void *pv) {
         // Use encoder ticks to decide when to stop
         long absR = labs(rTicks);
         long absL = labs(lTicks);
-        long avgTicks = (labs(rTicks) + labs(lTicks)) / 2;
+        long avgTicks = (absR + absL) / 2;
        
         if (maxTicks >= TURN_TICKS_TARGET) {
           stopCar();
