@@ -2,9 +2,9 @@
 
  
 // Sensor Pins
-#define LFS_L A6
-#define LFS_M A5
-#define LFS_R A7
+#define LFS_L A9
+#define LFS_M A8
+#define LFS_R A10
 
  
 // Threshold
