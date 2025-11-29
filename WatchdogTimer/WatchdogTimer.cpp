@@ -5,7 +5,7 @@
 // Setup Watchdog
 void initWatchdog(unsigned long timeoutMs) {
   uint32_t timeoutValue = (timeoutMs / 16);   // ~16ms per tick
-  if (timeoutValue > 4095) timeoutValue = 4095;
+  if (timeoutValue > 4095) timeoutValue = 4095; // ~65 seconds
 
   WDT->WDT_MR =
       0x00008000        |   // Disable in wait mode
