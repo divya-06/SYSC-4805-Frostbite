@@ -70,7 +70,7 @@ void updateLineSensors() {
     filled = true;
   }
 
-  bool lineDetectedNow = (avgL > threshold) || (avgR > threshold);
+  bool lineDetectedNow = (avgL > threshold) || (avgM > threshold) || (avgR > threshold);
 
   if (lineDetectedNow) {
     if (detectCount < 255) detectCount++;
