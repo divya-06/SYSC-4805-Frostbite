@@ -73,9 +73,9 @@ void updateLineSensors() {
   bool lineDetectedNow = (avgL > threshold) || (avgM > threshold) || (avgR > threshold);
 
   if (lineDetectedNow) {
-    if (detectCount < 255) detectCount++;
+    if (detectCount < 255) detectCount++; // 2^8 = 256
   } else {
-    if (detectCount > 0) detectCount--;
+    if (detectCount > 0) detectCount--; // 2^8 = 256
   }
 }
 
