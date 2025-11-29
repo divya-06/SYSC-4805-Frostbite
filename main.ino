@@ -240,7 +240,7 @@ void setup() {
   initLineSensors();
   initUltrasonic();
   initEncoders();
-  initWatchdog(120000);
+  initWatchdog(60000); // ~1 minute
 
   setLineThreshold(1000);
   randomSeed(analogRead(A0));
