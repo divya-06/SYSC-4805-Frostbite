@@ -17,7 +17,7 @@ volatile bool obstacleStable     = false;
 
 volatile uint16_t rawL, rawM, rawR;
 volatile uint16_t avgL, avgM, avgR;
-volatile float d1, d2;
+volatile float d1, d2, d3;
 volatile long rTicks, lTicks;
 
  
@@ -92,6 +92,7 @@ void vTaskUltrasonic(void *pv) {
     obstacleStable = isObstacleStable();
     d1 = getDist1();
     d2 = getDist2();
+    d3 = getDist3();
 
     vTaskDelayUntil(&lastWake, ULTRA_PERIOD_TICKS);
   }
@@ -212,6 +213,8 @@ void vTaskDebug(void *pv) {
     Serial.print(d1, 1);
     Serial.print("  d2=");
     Serial.println(d2, 1);
+    Serial.print("  d3=");
+    Serial.println(d3, 1);
 
     Serial.print("lineDetectedStable = ");
     Serial.println(lineDetectedStable ? "YES" : "NO");
