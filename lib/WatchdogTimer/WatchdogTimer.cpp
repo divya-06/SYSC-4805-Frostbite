@@ -1,4 +1,6 @@
 #include "WatchdogTimer.h"
+
+#ifdef ARDUINO
 #include <sam.h>
 
  
@@ -19,3 +21,12 @@ void initWatchdog(unsigned long timeoutMs) {
 void resetWatchdog() {
   WDT->WDT_CR = WDT_CR_KEY(0xA5) | WDT_CR_WDRSTT;
 }
+
+#else
+
+// Native test stubs
+void initWatchdog(unsigned long) {}
+
+void resetWatchdog() {}
+
+#endif

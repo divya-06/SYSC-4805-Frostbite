@@ -1,6 +1,17 @@
 #include "LineSensors.h"
 
- 
+#ifndef A9
+#define A9 9
+#endif
+
+#ifndef A8
+#define A8 8
+#endif
+
+#ifndef A10
+#define A10 10
+#endif 
+
 // Sensor Pins
 #define LFS_L A9
 #define LFS_M A8

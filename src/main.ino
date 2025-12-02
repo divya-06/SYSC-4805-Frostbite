@@ -9,7 +9,6 @@
 #include "UltrasonicSensors.h"
 #include "Encoders.h"
 #include "WatchdogTimer.h"
-
  
 // Shared Sensor Variables 
 volatile bool lineDetectedStable = false;
@@ -99,84 +98,86 @@ void vTaskUltrasonic(void *pv) {
 }
 
  
-// FSM Task : main robot logic
-void vTaskFSM(void *pv) {
-  TickType_t lastWake = xTaskGetTickCount();
+// Run exactly one FSM iteration (no RTOS delay here)
+void fsmStepOnce() {
+  switch (state) {
 
-  for (;;) {
-    switch (state) {
-
-      case FORWARD:
-        moveForward(forwardSpeed);
-        if (lineDetectedStable || obstacleStable) {
-          stopCar();
-          enterState(STOP1_AFTER_LINE);
-        }
-        break;
-
-      case STOP1_AFTER_LINE:
+    case FORWARD:
+      moveForward(forwardSpeed);
+      if (lineDetectedStable || obstacleStable) {
         stopCar();
-        if (millis() - stateStart >= settleStopMs) {
-          enterState(REVERSE);
-        }
-        break;
+        enterState(STOP1_AFTER_LINE);
+      }
+      break;
 
-      case REVERSE:
-        moveBackward(reverseSpeed);
-        if (millis() - stateStart >= reverseTimeMs) {
-          stopCar();
-          enterState(STOP2_BEFORE_TURN);
-        }
-        break;
+    case STOP1_AFTER_LINE:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
+        enterState(REVERSE);
+      }
+      break;
 
-      case STOP2_BEFORE_TURN:
+    case REVERSE:
+      moveBackward(reverseSpeed);
+      if (millis() - stateStart >= reverseTimeMs) {
         stopCar();
-        if (millis() - stateStart >= settleStopMs) {
+        enterState(STOP2_BEFORE_TURN);
+      }
+      break;
 
-          resetTicks();
+    case STOP2_BEFORE_TURN:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
 
-          // pick CW or CCW randomly
-          if (random(0, 2) == 0)
-            turnDirection = TURN_DIR_CW;
-          else
-            turnDirection = TURN_DIR_CCW;
+        resetTicks();
 
-          enterState(TURNING);
-        }
-        break;
-
-      case TURNING:
-        if (turnDirection == TURN_DIR_CW)
-          turnCW(turnSpeed);
+        if (random(0, 2) == 0)
+          turnDirection = TURN_DIR_CW;
         else
-          turnCCW(turnSpeed);
-       
-        // Use encoder ticks to decide when to stop
+          turnDirection = TURN_DIR_CCW;
+
+        enterState(TURNING);
+      }
+      break;
+
+    case TURNING:
+      if (turnDirection == TURN_DIR_CW)
+        turnCW(turnSpeed);
+      else
+        turnCCW(turnSpeed);
+
+      {
         long absR = labs(rTicks);
         long absL = labs(lTicks);
-        long avgTicks = (absR + absL) / 2;
-       
+        long maxTicks = (absR + absL) / 2;
+
         if (maxTicks >= TURN_TICKS_TARGET) {
           stopCar();
           enterState(STOP3_AFTER_TURN);
         }
-        break;
+      }
+      break;
 
-      case STOP3_AFTER_TURN:
-        stopCar();
-        if (millis() - stateStart >= settleStopMs) {
-          lineDetectedStable = false;
-          obstacleStable = false;
-          enterState(FORWARD);
-        }
-        break;
-    }
+    case STOP3_AFTER_TURN:
+      stopCar();
+      if (millis() - stateStart >= settleStopMs) {
+        lineDetectedStable = false;
+        obstacleStable     = false;
+        enterState(FORWARD);
+      }
+      break;
+  }
+}
 
+// FSM Task : main robot logic
+void vTaskFSM(void *pv) {
+  TickType_t lastWake = xTaskGetTickCount();
+  for (;;) {
+    fsmStepOnce();
     vTaskDelayUntil(&lastWake, FSM_PERIOD_TICKS);
   }
 }
 
- 
 // Watchdog Task 
 void vTaskWatchdog(void *pv) {
   TickType_t lastWake = xTaskGetTickCount();
