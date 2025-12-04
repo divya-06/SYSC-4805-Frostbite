@@ -156,7 +156,7 @@ void vTaskFSM(void *pv) {
         long absL = labs(lTicks);
         long avgTicks = (absR + absL) / 2;
        
-        if (maxTicks >= TURN_TICKS_TARGET) {
+        if (avgTicks  >= TURN_TICKS_TARGET) {
           stopCar();
           enterState(STOP3_AFTER_TURN);
         }
