@@ -32,19 +32,20 @@ Frostbite/
 │       └── WatchdogTimer.h
 │
 ├── src/
-│   └── main.cpp      // not used in native tests
+│   └── main.cpp        // not used in native tests
 │
 ├── test/
 │   ├── README
 │   ├── test_encoders.cpp
 │   ├── test_linesensors.cpp
 │   ├── test_motorcontrol.cpp
-│   ├── test_runner.cpp
 │   ├── test_ultrasonic.cpp
-│   └── test_watchdog.cpp
+│   ├── test_watchdog.cpp
+│   ├── test_full_integration.cpp   // FSM + sensors + encoders
+│   └── test_runner.cpp
 │
 ├── platformio.ini
-└── README.md         // this file
+└── README.md           // this file
 
 ```
 
@@ -101,3 +102,16 @@ Ensures watchdog initialization and kick functions are callable.
 ### test_runner.cpp
 
 Registers and executes all unit test functions.
+
+## Integration Test Overview
+
+### test_full_integration.cpp
+Contains higher-level tests that combine multiple modules and verify the FSM logic as a whole.
+
+#### 1. Line → Stop → Reverse Sequence
+Simulates rising line-sensor values and confirms that the FSM correctly transitions out of `FORWARD` into the stop-and-reverse sequence.
+
+#### 2. Reverse → Turn → Forward Sequence
+Simulates encoder ticks during turning and verifies full transitions through `STOP2_BEFORE_TURN`, `TURNING`, `STOP3_AFTER_TURN`, and back to `FORWARD`.
+
+These tests ensure that the FSM, sensors, timing logic, and encoder feedback all behave correctly when working together as a system.
