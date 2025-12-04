@@ -77,7 +77,7 @@ Inside the project root:
 
 This will compile and run all test files under the `test/` directory.
 
-## Purpose of Test Files
+## Unit Test Overview
 
 ### test_encoders.cpp
 
