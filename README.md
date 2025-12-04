@@ -5,7 +5,7 @@ This branch contains both the **unit testing** and **integration testing** envir
 ## Project Structure
 
 ```
-Frostbite/
+SYSC-4805-Frostbite/
 │
 ├── lib/
 │   ├── Encoders/
