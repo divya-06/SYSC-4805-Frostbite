@@ -107,7 +107,7 @@ Registers and executes all unit test functions.
 Contains higher-level tests that combine multiple modules and verify the FSM logic as a whole.
 
 #### 1. Line → Stop → Reverse Sequence
-Simulates rising line-sensor values and confirms that the FSM correctly transitions out of `FORWARD` into the stop-and-reverse sequence.
+Simulates rising line-sensor values and confirms that the FSM correctly transitions out of `FORWARD` into the `STOP1_AFTER_LINE` and `REVERSE` sequence.
 
 #### 2. Reverse → Turn → Forward Sequence
 Simulates encoder ticks during turning and verifies full transitions through `STOP2_BEFORE_TURN`, `TURNING`, `STOP3_AFTER_TURN`, and back to `FORWARD`.
