@@ -7,9 +7,8 @@
 
 using namespace fakeit;
 
-// -----------------------------------------------------------------------------
+
 // Pin aliases (match LineSensors.cpp)
-// -----------------------------------------------------------------------------
 #ifndef A9
 #define A9 9
 #endif
@@ -24,9 +23,8 @@ using namespace fakeit;
 #define LFS_M A8
 #define LFS_R A10
 
-// -----------------------------------------------------------------------------
+
 // Local copy of enums & global state (same as main.ino, but defined HERE)
-// -----------------------------------------------------------------------------
 enum TurnDir {
   TURN_DIR_CW,
   TURN_DIR_CCW
@@ -63,9 +61,8 @@ static unsigned long settleStopMs  = 150;
 
 static const long TURN_TICKS_TARGET = 11; // ~135°
 
-// -----------------------------------------------------------------------------
+
 // Fake time base
-// -----------------------------------------------------------------------------
 static unsigned long fakeNow = 0;  // we control "time" manually in tests
 
 static void enterState(State s) {
@@ -73,9 +70,8 @@ static void enterState(State s) {
   stateStart = fakeNow;
 }
 
-// -----------------------------------------------------------------------------
+
 // Local copy of FSM logic (single step, no FreeRTOS, NO ultrasonic/encoders calls)
-// -----------------------------------------------------------------------------
 static void fsmStepOnce() {
   switch (state) {
 
@@ -142,9 +138,8 @@ static void fsmStepOnce() {
   }
 }
 
-// -----------------------------------------------------------------------------
+
 // Faked sensor readings (line appears after some samples)
-// -----------------------------------------------------------------------------
 static int readCounter = 0;
 static int analogReadScript(uint8_t pin) {
   readCounter++;
@@ -156,9 +151,8 @@ static int analogReadScript(uint8_t pin) {
   return 100;
 }
 
-// -----------------------------------------------------------------------------
+
 // TEST 1: Forward → detects line → STOP1 → REVERSE/STOP2
-// -----------------------------------------------------------------------------
 void test_full_integration_line_to_reverse() {
   ArduinoFakeReset();
   fakeNow     = 0;
@@ -210,9 +204,8 @@ void test_full_integration_line_to_reverse() {
   );
 }
 
-// -----------------------------------------------------------------------------
+
 // TEST 2: From STOP2_BEFORE_TURN → TURNING → STOP3 → FORWARD
-// -----------------------------------------------------------------------------
 void test_full_integration_turn_with_encoders() {
   ArduinoFakeReset();
   fakeNow     = 0;
