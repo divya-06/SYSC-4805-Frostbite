@@ -30,7 +30,7 @@ Frostbite/
 │       └── WatchdogTimer.h
 │
 ├── src/
-│   └── main.cpp        // not used in native tests
+│   └── main.ino        // not used in native tests
 │
 ├── test/
 │   ├── README
