@@ -1,8 +1,6 @@
-# Unit Test Branch README
+# Unit & Integration Test Branch README
 
-This branch contains the unit testing environment for the Frostbite
-project. All test files are located in the `test/` directory, and the
-`platformio.ini` configuration file is located at the project root.
+This branch contains both the **unit testing** and **integration testing** environments for the Frostbite project. All test files are located in the `test/` directory, and the `platformio.ini` configuration file is located at the project root.
 
 ## Project Structure
 
