@@ -74,7 +74,7 @@ The robot continuously runs several FreeRTOS tasks:
 5. Place the robot in the test arena and power it on.
 
 ## Unit Testing
-Unit tests are located in the `unitTest` branch.  
+Unit tests are located in the `tests` branch.  
 Switch to that branch and follow the README instructions to test individual modules.
 
 ## Authors
