@@ -149,9 +149,9 @@ void fsmStepOnce() {
       {
         long absR = labs(rTicks);
         long absL = labs(lTicks);
-        long maxTicks = (absR + absL) / 2;
+        long avgTicks = (absR + absL) / 2;
 
-        if (maxTicks >= TURN_TICKS_TARGET) {
+        if (avgTicks >= TURN_TICKS_TARGET) {
           stopCar();
           enterState(STOP3_AFTER_TURN);
         }
