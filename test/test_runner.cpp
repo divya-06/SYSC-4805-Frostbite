@@ -22,18 +22,16 @@ void tearDown() {}
 int main(int, char**) {
     UNITY_BEGIN();
 
-    // --- Hardware Component Tests ---
+    // Unit Tests
     RUN_TEST(test_encoders_init_and_reset);
     RUN_TEST(test_linesensors_threshold_and_stability);
     RUN_TEST(test_motorcontrol_api_invocations);
     RUN_TEST(test_ultrasonic_stable_detection);
     RUN_TEST(test_watchdog_init_and_kick);
 
-    // --- Existing Integration Tests ---
+    // Integration Tests
     RUN_TEST(test_full_integration_line_to_reverse);
     RUN_TEST(test_full_integration_turn_with_encoders);
-
-    // --- New Integration Tests ---
     RUN_TEST(test_integration_forward_line_stop);
     RUN_TEST(test_integration_obstacle_reverse);
     RUN_TEST(test_integration_turn_until_ticks);
